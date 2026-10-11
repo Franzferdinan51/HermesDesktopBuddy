@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hermes winged mark: reusable in-app logo, matches launcher icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Hermes wings -->
+    <path android:fillColor="#FFC95C"
+        android:pathData="M75,42 C86,38 94,32 98,24 C90,26 81,30 74,36 Z" />
+    <path android:fillColor="#FFC95C"
+        android:pathData="M75,50 C84,48 92,44 97,38 C90,39 82,42 75,46 Z" />
+    <path android:fillColor="#FFC95C"
+        android:pathData="M75,58 C82,58 88,55 92,51 C87,51 81,53 76,55 Z" />
+    <path android:fillColor="#FFC95C"
+        android:pathData="M33,42 C22,38 14,32 10,24 C18,26 27,30 34,36 Z" />
+    <path android:fillColor="#FFC95C"
+        android:pathData="M33,50 C24,48 16,44 11,38 C18,39 26,42 33,46 Z" />
+    <path android:fillColor="#FFC95C"
+        android:pathData="M33,58 C26,58 20,55 16,51 C21,51 27,53 32,55 Z" />
+    <!-- Chat bubble -->
+    <path android:fillColor="#F5A623"
+        android:pathData="M45,32 h18 a9,9 0 0 1 9,9 v14 a9,9 0 0 1 -9,9 H54 l-14,12 v-12 H45 a9,9 0 0 1 -9,-9 V41 a9,9 0 0 1 9,-9 z" />
+    <!-- Typing dots -->
+    <path android:fillColor="#1B1B2F"
+        android:pathData="M48,48 m-2.6,0 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0" />
+    <path android:fillColor="#1B1B2F"
+        android:pathData="M54,48 m-2.6,0 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0" />
+    <path android:fillColor="#1B1B2F"
+        android:pathData="M60,48 m-2.6,0 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0" />
+</vector>
