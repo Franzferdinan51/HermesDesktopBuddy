@@ -33,6 +33,25 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.RequestPermission()
     ) { /* best effort */ }
 
+    private val audioPerm = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            startGadgetService()
+        } else {
+            android.widget.Toast.makeText(
+                this,
+                "Microphone permission is required for Hermes Buddy voice features.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun startGadgetService() {
+        val svc = Intent(this, GadgetService::class.java)
+        ContextCompat.startForegroundService(this, svc)
+    }
+
     private val svcConn = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             service = (binder as GadgetService.LocalBinder).getService()
@@ -57,8 +76,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Keep the gadget link alive in a foreground service.
-        val svc = Intent(this, GadgetService::class.java)
-        ContextCompat.startForegroundService(this, svc)
+        // The service runs as a microphone-type FGS (hold-to-talk), which on
+        // Android 14+ requires RECORD_AUDIO to be granted before startForeground.
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            startGadgetService()
+        } else {
+            audioPerm.launch(Manifest.permission.RECORD_AUDIO)
+        }
 
         b.btnChat.setOnClickListener {
             startActivity(Intent(this, ChatActivity::class.java))
