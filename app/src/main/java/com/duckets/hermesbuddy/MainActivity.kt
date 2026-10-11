@@ -128,13 +128,13 @@ class MainActivity : AppCompatActivity() {
                             GadgetConnection.ConnState.PAIRING -> "Waiting for pairing"
                             GadgetConnection.ConnState.CONNECTED -> "Connected"
                         }
-                        b.statusDot.setBackgroundColor(
+                        b.statusDot.setBackgroundResource(
                             when (s) {
-                                GadgetConnection.ConnState.CONNECTED -> Color.parseColor("#2ecc71")
-                                GadgetConnection.ConnState.PAIRING -> Color.parseColor("#f39c12")
+                                GadgetConnection.ConnState.CONNECTED -> R.drawable.status_dot_online
+                                GadgetConnection.ConnState.PAIRING -> R.drawable.status_dot_pairing
                                 GadgetConnection.ConnState.CONNECTING,
-                                GadgetConnection.ConnState.HANDSHAKE -> Color.parseColor("#3498db")
-                                GadgetConnection.ConnState.DISCONNECTED -> Color.parseColor("#e74c3c")
+                                GadgetConnection.ConnState.HANDSHAKE -> R.drawable.status_dot_pairing
+                                GadgetConnection.ConnState.DISCONNECTED -> R.drawable.status_dot_offline
                             }
                         )
                     }
