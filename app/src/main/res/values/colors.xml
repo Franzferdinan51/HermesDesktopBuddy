@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Hermes palette: gold messenger on deep indigo night -->
+    <color name="hermes_gold">#D4AF37</color>
+    <color name="hermes_gold_light">#F5D76E</color>
+    <color name="hermes_gold_warm">#F5A623</color>
+    <color name="hermes_gold_pale">#FFC95C</color>
+    <color name="hermes_gold_deep">#8B6914</color>
+
+    <color name="hermes_ink">#0D0D18</color>
+    <color name="hermes_night">#1B1B2F</color>
+    <color name="hermes_surface">#23233A</color>
+    <color name="hermes_surface_light">#2E2E4A</color>
+
+    <color name="hermes_mist">#F5F0E1</color>
+    <color name="hermes_text_primary">#FFFFFF</color>
+    <color name="hermes_text_secondary">#B8B8CC</color>
+    <color name="hermes_text_muted">#7A7A94</color>
+
+    <color name="hermes_online">#4ADE80</color>
+    <color name="hermes_offline">#6B7280</color>
+    <color name="hermes_listening">#F5A623</color>
+
     <color name="ic_launcher_background">#1B1B2F</color>
 </resources>
