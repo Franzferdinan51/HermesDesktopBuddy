@@ -1,6 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.HermesBuddy" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@android:color/holo_blue_dark</item>
+        <item name="colorPrimary">@color/hermes_gold</item>
+        <item name="colorOnPrimary">@color/hermes_ink</item>
+        <item name="colorPrimaryContainer">@color/hermes_gold_deep</item>
+        <item name="android:colorBackground">@color/hermes_ink</item>
+        <item name="colorSurface">@color/hermes_night</item>
+        <item name="colorOnSurface">@color/hermes_text_primary</item>
+        <item name="android:textColorPrimary">@color/hermes_text_primary</item>
+        <item name="android:textColorSecondary">@color/hermes_text_secondary</item>
+        <item name="android:windowBackground">@drawable/bg_app</item>
+    </style>
+
+    <style name="HermesGoldButton" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/btn_gold</item>
+        <item name="android:textColor">@color/hermes_ink</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:minHeight">52dp</item>
+    </style>
+
+    <style name="HermesGhostButton" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/btn_ghost</item>
+        <item name="android:textColor">@color/hermes_gold</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <style name="HermesTitle">
+        <item name="android:textColor">@color/hermes_text_primary</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="HermesSubtitle">
+        <item name="android:textColor">@color/hermes_text_secondary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="HermesBody">
+        <item name="android:textColor">@color/hermes_text_primary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingExtra">4dp</item>
     </style>
 </resources>
