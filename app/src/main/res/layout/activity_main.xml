@@ -1,122 +1,226 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Companion home: Hermes avatar stage, status card, caption, actions.
+     Mirrors MuseCompanionApp's companion_screen: avatar disc, status lines, bottom bar. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@drawable/bg_app"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="20dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Hermes Buddy"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
+        <!-- Header: Hermes mark + name + battery -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <FrameLayout
+                android:layout_width="56dp"
+                android:layout_height="56dp">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/avatar_ring" />
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/avatar_bg"
+                    android:clipToOutline="true"
+                    android:src="@drawable/ic_hermes_mark"
+                    android:contentDescription="Hermes" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="14dp"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/HermesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hermes Buddy"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/pairedLabel"
+                    style="@style/HermesSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Not paired" />
+            </LinearLayout>
+
             <View
                 android:id="@+id/statusDot"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:background="@android:color/darker_gray" />
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:background="@drawable/status_dot_offline" />
+        </LinearLayout>
+
+        <!-- Avatar stage: large Hermes disc, Muse-style companion stage -->
+        <FrameLayout
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="28dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/avatar_ring" />
+
+            <View
+                android:layout_width="204dp"
+                android:layout_height="204dp"
+                android:layout_gravity="center"
+                android:background="@drawable/avatar_bg" />
+
+            <ImageView
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_hermes_mark"
+                android:contentDescription="Hermes avatar" />
+        </FrameLayout>
+
+        <!-- Status card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/card_glossy"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <View
+                android:id="@+id/statusDotCard"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:background="@drawable/status_dot_offline" />
 
             <TextView
                 android:id="@+id/statusText"
-                android:layout_width="wrap_content"
+                style="@style/HermesBody"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginStart="12dp"
                 android:text="Disconnected"
-                android:textSize="18sp" />
+                android:textSize="16sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/pairedLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Not paired"
-            android:textSize="14sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Last update"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/captionText"
+        <!-- Caption card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:minHeight="48dp"
-            android:text="Not connected"
-            android:textSize="16sp" />
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_glossy"
+            android:orientation="vertical"
+            android:padding="16dp">
 
+            <TextView
+                style="@style/HermesSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Last update"
+                android:textStyle="bold"
+                android:textColor="@color/hermes_gold" />
+
+            <TextView
+                android:id="@+id/captionText"
+                style="@style/HermesBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:minHeight="44dp"
+                android:text="Not connected" />
+        </LinearLayout>
+
+        <!-- Pairing code card -->
         <LinearLayout
             android:id="@+id/pairCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_glossy"
             android:orientation="vertical"
-            android:padding="12dp"
+            android:padding="16dp"
             android:visibility="gone">
 
             <TextView
+                style="@style/HermesSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pairing code — approve on the Hermes host:"
-                android:textSize="14sp" />
+                android:text="Pairing code — approve on the Hermes host:" />
 
             <TextView
                 android:id="@+id/pairCode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:text="—"
-                android:textSize="32sp"
-                android:textStyle="bold" />
+                android:textColor="@color/hermes_gold"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.2" />
         </LinearLayout>
 
+        <!-- Actions -->
         <Button
             android:id="@+id/btnChat"
+            style="@style/HermesGoldButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Chat" />
-
-        <Button
-            android:id="@+id/btnPair"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Pair" />
-
-        <Button
-            android:id="@+id/btnSettings"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Settings" />
+            android:text="Chat with Hermes" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnPair"
+                style="@style/HermesGhostButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Pair" />
+
+            <Button
+                android:id="@+id/btnSettings"
+                style="@style/HermesGhostButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:text="Settings" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="16dp"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/btnReconnect"
+                style="@style/HermesGhostButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -124,9 +228,10 @@
 
             <Button
                 android:id="@+id/btnNewSession"
+                style="@style/HermesGhostButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="10dp"
                 android:layout_weight="1"
                 android:text="New session" />
         </LinearLayout>
