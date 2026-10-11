@@ -70,30 +70,13 @@
         </LinearLayout>
 
         <!-- Avatar stage: large Hermes disc, Muse-style companion stage -->
-        <FrameLayout
+        <ImageView
             android:layout_width="220dp"
             android:layout_height="220dp"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="28dp">
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/avatar_ring" />
-
-            <View
-                android:layout_width="204dp"
-                android:layout_height="204dp"
-                android:layout_gravity="center"
-                android:background="@drawable/avatar_bg" />
-
-            <ImageView
-                android:layout_width="150dp"
-                android:layout_height="150dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_hermes_mark"
-                android:contentDescription="Hermes avatar" />
-        </FrameLayout>
+            android:layout_marginTop="28dp"
+            android:src="@drawable/hermes_avatar"
+            android:contentDescription="Hermes Buddy" />
 
         <!-- Status card -->
         <LinearLayout
