@@ -34,29 +34,25 @@ class ChatAdapter : ListAdapter<ChatMessage, ChatAdapter.VH>(DIFF) {
         when (msg.role) {
             ChatMessage.Role.USER -> {
                 lp.gravity = Gravity.END
-                holder.b.bubble.setBackgroundColor(
-                    ContextCompat.getColor(ctx, android.R.color.holo_blue_dark)
-                )
+                holder.b.bubble.background =
+                    ContextCompat.getDrawable(ctx, R.drawable.bubble_user)
                 holder.b.bubble.setTextColor(
-                    ContextCompat.getColor(ctx, android.R.color.white)
+                    ContextCompat.getColor(ctx, R.color.hermes_text_primary)
                 )
             }
             ChatMessage.Role.ASSISTANT -> {
                 lp.gravity = Gravity.START
-                holder.b.bubble.setBackgroundColor(
-                    ContextCompat.getColor(ctx, android.R.color.darker_gray)
-                )
+                holder.b.bubble.background =
+                    ContextCompat.getDrawable(ctx, R.drawable.bubble_hermes)
                 holder.b.bubble.setTextColor(
-                    ContextCompat.getColor(ctx, android.R.color.white)
+                    ContextCompat.getColor(ctx, R.color.hermes_ink)
                 )
             }
             ChatMessage.Role.SYSTEM -> {
                 lp.gravity = Gravity.CENTER_HORIZONTAL
-                holder.b.bubble.setBackgroundColor(
-                    ContextCompat.getColor(ctx, android.R.color.transparent)
-                )
+                holder.b.bubble.background = null
                 holder.b.bubble.setTextColor(
-                    ContextCompat.getColor(ctx, android.R.color.darker_gray)
+                    ContextCompat.getColor(ctx, R.color.hermes_text_muted)
                 )
                 holder.b.bubble.textSize = 12f
             }
