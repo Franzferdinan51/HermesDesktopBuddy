@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gold ring for the Hermes avatar stage, Muse-style circular stage -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="135"
+        android:startColor="#F5D76E"
+        android:centerColor="#D4AF37"
+        android:endColor="#8B6914"
+        android:type="linear" />
+</shape>
