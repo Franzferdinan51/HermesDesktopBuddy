@@ -1,52 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Chat screen: Muse-style message list + glossy composer with hold-to-talk -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
     android:orientation="vertical">
 
+    <!-- Header bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/avatar_ring" />
+
+            <ImageView
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="center"
+                android:background="@drawable/avatar_bg"
+                android:src="@drawable/ic_hermes_mark"
+                android:contentDescription="Hermes" />
+        </FrameLayout>
+
+        <TextView
+            style="@style/HermesTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Message Hermes"
+            android:textSize="18sp" />
+
+        <View
+            android:id="@+id/chatStatusDot"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:background="@drawable/status_dot_offline" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#22FFFFFF" />
+
+    <!-- Messages -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/messages"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:padding="8dp" />
+        android:padding="12dp" />
 
+    <!-- Activity banner (listening / typing) -->
+    <TextView
+        android:id="@+id/activityBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="6dp"
+        android:textColor="@color/hermes_gold"
+        android:textSize="13sp"
+        android:textStyle="italic"
+        android:visibility="gone" />
+
+    <!-- Composer -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/card_glossy"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="8dp">
+        android:padding="10dp"
+        android:layout_margin="10dp">
 
         <EditText
             android:id="@+id/input"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@drawable/input_glossy"
             android:hint="Type a message…"
+            android:textColor="@color/hermes_text_primary"
+            android:textColorHint="@color/hermes_text_muted"
             android:inputType="text"
-            android:maxLines="4" />
+            android:maxLines="4"
+            android:padding="12dp"
+            android:textSize="15sp" />
 
-        <Button
+        <ImageButton
             android:id="@+id/btnSend"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginStart="8dp"
-            android:text="Send" />
+            android:background="@drawable/btn_gold"
+            android:src="@drawable/ic_send"
+            android:contentDescription="Send"
+            android:padding="10dp" />
 
         <Button
             android:id="@+id/btnStop"
+            style="@style/HermesGhostButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:layout_marginStart="8dp"
-            android:text="Stop" />
+            android:minWidth="64dp"
+            android:text="Stop"
+            android:textSize="13sp" />
     </LinearLayout>
 
+    <!-- Hold to talk -->
     <Button
         android:id="@+id/btnTalk"
+        style="@style/HermesGoldButton"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_margin="8dp"
-        android:text="Hold to talk" />
+        android:layout_height="60dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="12dp"
+        android:drawableStart="@drawable/ic_mic"
+        android:drawablePadding="10dp"
+        android:text="Hold to talk"
+        android:textSize="15sp" />
 </LinearLayout>
