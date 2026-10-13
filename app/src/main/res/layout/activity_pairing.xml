@@ -146,7 +146,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="8dp"
                 android:text="—"
-                android:textColor="@color/hermes_gold"
+                android:textColor="@android:color/white"
                 android:textSize="48sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.15" />

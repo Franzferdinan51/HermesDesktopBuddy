@@ -10,7 +10,11 @@ import android.os.Bundle
 import android.os.IBinder
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.duckets.hermesbuddy.databinding.ActivitySettingsBinding
+import kotlinx.coroutines.launch
 
 /** Host URL, device name, TTS toggle, mic rate. Saved to DeviceStore. */
 class SettingsActivity : AppCompatActivity() {
@@ -22,6 +26,7 @@ class SettingsActivity : AppCompatActivity() {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             service = (binder as GadgetService.LocalBinder).getService()
             loadValues()
+            observeDiag()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -53,15 +58,33 @@ class SettingsActivity : AppCompatActivity() {
             } catch (_: Exception) {
             }
         }
+
+        b.btnResetKey.setOnClickListener {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Reset device key?")
+                .setMessage(
+                    "This forgets the pairing and re-enrolls as a brand-new " +
+                        "device. You will need to approve a new pairing code."
+                )
+                .setPositiveButton("Reset") { _, _ ->
+                    service?.resetDeviceKey()
+                    loadValues()
+                    Toast.makeText(this, "Key reset — re-pair this device", Toast.LENGTH_LONG).show()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
     }
 
     override fun onStart() {
         super.onStart()
+        AppVisibility.entered()
         bindService(Intent(this, GadgetService::class.java), svcConn, Context.BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
         super.onStop()
+        AppVisibility.exited()
         try {
             unbindService(svcConn)
         } catch (_: Exception) {
@@ -124,5 +147,30 @@ class SettingsActivity : AppCompatActivity() {
         b.ttsSwitch.isChecked = svc.store.ttsEnabled
         b.micRate.setText(svc.store.micRate.toString())
         b.deviceIdValue.text = svc.store.deviceId()
+        refreshDiag()
+    }
+
+    private fun observeDiag() {
+        val svc = service ?: return
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { svc.connState.collect { refreshDiag() } }
+                launch { svc.lastError.collect { refreshDiag() } }
+                launch { svc.sessionId.collect { refreshDiag() } }
+            }
+        }
+    }
+
+    private fun refreshDiag() {
+        val svc = service ?: return
+        b.diagText.text = buildString {
+            appendLine("state: ${svc.connState.value.name.lowercase()}")
+            appendLine("paired: ${svc.paired.value}")
+            appendLine("proto: ${Proto.SUBPROTOCOL} (v${Proto.VERSION})")
+            appendLine("server: ${svc.serverInfo.value ?: "—"}")
+            appendLine("session: ${svc.sessionId.value ?: "—"}")
+            appendLine("battery: ${svc.batteryPct()}%")
+            append("last error: ${svc.lastError.value ?: "none"}")
+        }
     }
 }

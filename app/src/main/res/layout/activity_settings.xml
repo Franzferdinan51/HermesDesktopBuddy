@@ -145,6 +145,42 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
+        <!-- Diagnostics card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_glossy"
+            android:elevation="8dp"
+            android:outlineSpotShadowColor="@color/muse_blue_shadow"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HermesSectionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Diagnostics" />
+
+            <TextView
+                android:id="@+id/diagText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="—"
+                android:textColor="@color/hermes_text_primary"
+                android:textIsSelectable="true"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnResetKey"
+                style="@style/HermesGhostButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Reset device key &amp; re-pair" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/btnSave"
             style="@style/HermesPrimaryButton"

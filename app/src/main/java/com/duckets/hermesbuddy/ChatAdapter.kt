@@ -84,6 +84,8 @@ class ChatAdapter : ListAdapter<ChatMessage, ChatAdapter.VH>(DIFF) {
         }
         holder.b.messageCol.layoutParams = colLp
         holder.b.timestamp.layoutParams = timeLp
+        holder.b.bubble.autoLinkMask = android.text.util.Linkify.ALL
+        holder.b.bubble.linksClickable = true
         holder.b.bubble.text = msg.text
         holder.b.timestamp.text = TIME_FMT.format(Date(msg.ts))
         holder.b.timestamp.visibility =

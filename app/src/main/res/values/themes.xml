@@ -14,10 +14,14 @@
         <item name="android:navigationBarColor">@color/muse_ink</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="alertDialogTheme">@style/HermesDialog</item>
+        <item name="materialAlertDialogTheme">@style/HermesDialog</item>
     </style>
 
     <style name="HermesDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="colorSurface">@color/muse_night</item>
+        <item name="colorSurfaceContainer">@color/muse_night</item>
+        <item name="colorSurfaceContainerHigh">@color/muse_night</item>
+        <item name="colorSurfaceContainerHighest">@color/muse_card</item>
         <item name="colorOnSurface">@color/hermes_text_primary</item>
         <item name="colorPrimary">@color/muse_blue_light</item>
         <item name="alertDialogStyle">@style/HermesAlertDialog</item>
@@ -69,7 +73,7 @@
     </style>
 
     <style name="HermesSectionLabel">
-        <item name="android:textColor">@color/hermes_gold</item>
+        <item name="android:textColor">@color/muse_blue_light</item>
         <item name="android:textSize">13sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:fontFamily">sans-serif-medium</item>

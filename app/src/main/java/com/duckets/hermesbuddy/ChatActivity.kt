@@ -15,8 +15,8 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -73,6 +73,15 @@ class ChatActivity : AppCompatActivity() {
 
         b.btnSend.setOnClickListener { sendInput() }
         b.btnStop.setOnClickListener { service?.sendCancel() }
+        b.btnClearChat.setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Clear chat?")
+                .setMessage("This erases the on-device chat history.")
+                .setPositiveButton("Clear") { _, _ -> service?.clearChat() }
+                .setNegativeButton("Keep", null)
+                .show()
+        }
+        handleShareIntent(intent)
         b.input.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
                 sendInput()
@@ -107,11 +116,13 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        AppVisibility.entered()
         bindService(Intent(this, GadgetService::class.java), svcConn, Context.BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
         super.onStop()
+        AppVisibility.exited()
         if (recording) stopTalk()
         try {
             unbindService(svcConn)
@@ -131,6 +142,23 @@ class ChatActivity : AppCompatActivity() {
         b.btnTalk.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
         service?.sendText(text)
         b.input.text.clear()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShareIntent(intent)
+    }
+
+    /** Prefill the composer with text shared from another app. */
+    private fun handleShareIntent(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_SEND) return
+        if (intent.type?.startsWith("text/") != true) return
+        val shared = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.trim()
+        if (!shared.isNullOrEmpty()) {
+            b.input.setText(shared)
+            b.input.setSelection(shared.length)
+        }
     }
 
     private fun observeService() {
@@ -190,13 +218,13 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private var promptShownFor: String? = null
-    private var promptDialog: AlertDialog? = null
+    private var promptDialog: androidx.appcompat.app.AlertDialog? = null
 
     private fun showPromptDialog(prompt: PendingPrompt) {
         if (promptShownFor == prompt.id) return
         promptShownFor = prompt.id
         promptDialog?.dismiss()
-        promptDialog = AlertDialog.Builder(this)
+        promptDialog = MaterialAlertDialogBuilder(this)
             .setTitle(prompt.title.ifEmpty { "Hermes asks" })
             .setMessage(prompt.text)
             .setPositiveButton("Yes") { _, _ -> service?.answerPrompt(prompt.id, true) }

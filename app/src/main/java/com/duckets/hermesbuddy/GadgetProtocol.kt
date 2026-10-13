@@ -15,7 +15,7 @@ import java.nio.ByteOrder
 object Proto {
     const val VERSION = 1
     const val SUBPROTOCOL = "hermes-gadget.v1"
-    const val FIRMWARE = "0.1.0"
+    const val FIRMWARE = "0.2.0"
 
     // Binary channels
     const val CH_AUDIO = 0x01
@@ -25,7 +25,12 @@ object Proto {
 /** Incoming (server -> device) messages. Unknown types are kept, not dropped. */
 sealed interface InMsg {
     data class Challenge(val nonce: String, val enrolled: Boolean) : InMsg
-    data class Welcome(val session: String, val paired: Boolean, val heartbeatS: Int) : InMsg
+    data class Welcome(
+        val session: String,
+        val paired: Boolean,
+        val heartbeatS: Int,
+        val server: String = "",
+    ) : InMsg
     data class Pairing(val code: String, val command: String) : InMsg
     object Paired : InMsg
     object Unpaired : InMsg
@@ -55,7 +60,8 @@ fun parseInMsg(obj: JSONObject): InMsg {
     return when (t) {
         "challenge" -> InMsg.Challenge(obj.optString("nonce"), obj.optBoolean("enrolled"))
         "welcome" -> InMsg.Welcome(
-            obj.optString("session"), obj.optBoolean("paired"), obj.optInt("heartbeat_s", 20)
+            obj.optString("session"), obj.optBoolean("paired"), obj.optInt("heartbeat_s", 20),
+            obj.optString("server", ""),
         )
         "pairing" -> InMsg.Pairing(obj.optString("code"), obj.optString("command"))
         "paired" -> InMsg.Paired

@@ -86,10 +86,10 @@
 
         <!-- Avatar stage: large Hermes disc -->
         <ImageView
-            android:layout_width="220dp"
-            android:layout_height="220dp"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="18dp"
             android:src="@drawable/hermes_avatar"
             android:contentDescription="Hermes Buddy" />
 
@@ -97,7 +97,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="18dp"
             android:background="@drawable/card_glossy"
             android:elevation="8dp"
             android:outlineSpotShadowColor="@color/muse_blue_shadow"
@@ -139,7 +139,7 @@
                 android:layout_height="wrap_content"
                 android:text="Last update"
                 android:textStyle="bold"
-                android:textColor="@color/hermes_gold" />
+                android:textColor="@color/muse_blue_light" />
 
             <TextView
                 android:id="@+id/captionText"
@@ -189,7 +189,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="—"
-                android:textColor="@color/hermes_gold"
+                android:textColor="@android:color/white"
                 android:textSize="36sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.2" />

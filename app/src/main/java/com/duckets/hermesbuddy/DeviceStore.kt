@@ -42,6 +42,12 @@ class DeviceStore(context: Context) {
 
     fun deviceId(): String = Crypto.deviceId(deviceKey())
 
+    /** Forget the device key; the next read generates a fresh one. */
+    @Synchronized
+    fun resetKey() {
+        prefs.edit().remove("device_key").putBoolean("paired", false).apply()
+    }
+
     var hostUrl: String
         get() = prefs.getString("host_url", DEFAULT_HOST_URL) ?: DEFAULT_HOST_URL
         set(v) = prefs.edit().putString("host_url", v).apply()

@@ -19,7 +19,8 @@
         android:left="10dp"
         android:right="10dp"
         android:top="2dp"
-        android:bottom="100dp">
+        android:height="26dp"
+        android:gravity="top">
         <shape android:shape="rectangle">
             <corners android:radius="16dp" />
             <gradient

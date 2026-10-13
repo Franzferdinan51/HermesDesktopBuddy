@@ -59,11 +59,13 @@ class PairingActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        AppVisibility.entered()
         bindService(Intent(this, GadgetService::class.java), svcConn, Context.BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
         super.onStop()
+        AppVisibility.exited()
         try {
             unbindService(svcConn)
         } catch (_: Exception) {

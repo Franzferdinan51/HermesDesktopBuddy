@@ -20,7 +20,8 @@
         android:left="12dp"
         android:right="12dp"
         android:top="2dp"
-        android:bottom="200dp">
+        android:height="26dp"
+        android:gravity="top">
         <shape android:shape="rectangle">
             <corners
                 android:topLeftRadius="18dp"

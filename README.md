@@ -1,94 +1,88 @@
-# HermesDesktopBuddy
+# Hermes Buddy (HermesDesktopBuddy)
 
-Native Android (Kotlin) companion app for **Hermes Agent** — the Hermes
-equivalent of MuseCompanionApp. The phone acts as a Hermes gadget: it
-connects to the Hermes gateway's Gadget plugin over WebSocket, pairs,
-chats, talks, and answers device actions.
+Native Android companion for the Nous Research Hermes agent (`hermes-gadget.v1`).
+Chat with Hermes over text or hold-to-talk voice, answer yes/no prompts,
+receive notifications, and let Hermes vibrate / notify / read the battery on
+your phone — all through the Hermes gateway's gadget endpoint.
 
-Protocol: `hermes-gadget.v1` (`ws://<hermes-host>:8765/gadget`).
+UI/UX is heavily inspired by
+[MuseCompanionApp](https://github.com/Franzferdinan51/MuseCompanionApp):
+blue bubbles, glossy cards, status pills, diagnostics, and an offline outbox.
+
+**Current version: 0.2.0** (versionCode 2)
 
 ## Features
 
-- **Pairing** — full `hello` → `challenge` → `auth` → `welcome` handshake.
-  First contact sends the 32-byte device key (base64); later connections
-  use `HMAC-SHA256(key, "hermes-gadget/v1|" + device_id + "|" + nonce)`.
-  The pairing code + approve command are shown in the app; approval needs
-  no reconnect.
-- **Dashboard** (`MainActivity`) — connection status dot, last caption /
-  status line, pairing code while unpaired, Chat / Pair / Settings /
-  Reconnect / New session buttons.
-- **Chat** (`ChatActivity`) — streaming replies (`reply.delta`), typed
-  messages, hold-to-talk voice (PCM16 mono, `audio.start` → binary frames →
-  `audio.end`), Stop (sends `cancel`), and yes/no prompt dialogs.
-- **Voice out** — server `audio.start`/`audio.end` streams play through
-  `AudioTrack`; when the server only sends text, Android TTS speaks the
-  reply (toggle in Settings).
-- **Device actions** (registered in `hello`): `buddy.vibrate`, `buddy.notify`
-  (title/body notification), `buddy.battery` (battery %). Every `action`
-  is answered exactly once with `action.result`.
-- **Telemetry** — `state` with `battery_pct` every 60 s.
-- **Settings** — host URL (default `ws://100.68.208.113:8765/gadget`),
-  device name, mic rate, TTS toggle; device ID viewer (for
-  `hermes gadget forget`).
-- The 32-byte device key lives in **EncryptedSharedPreferences** and is
-  never committed or hardcoded.
+- **Pairing** — server-issued code + approve command, copy buttons,
+  how-it-works / done states, no reconnect needed after approval.
+- **Chat** — streamed replies keyed by turn, timestamps, blue/navy bubbles
+  with gloss, smart auto-scroll, empty state, IME send, link detection,
+  long-press copy, clear-history with confirm.
+- **Offline outbox** — messages sent while disconnected are queued (persisted)
+  and flushed automatically on reconnect.
+- **Chat persistence** — last 100 messages survive restarts.
+- **Voice in** — hold-to-talk (16 kHz PCM), red recording state, haptics,
+  transcripts shown as `Heard: …`.
+- **Voice out** — server TTS audio streams play locally; falls back to
+  on-device TTS when the server sends none (toggle in Settings).
+- **Yes/No prompts** — themed dialog in chat, heads-up notification when
+  the app is backgrounded.
+- **Device actions** — `buddy.vibrate`, `buddy.notify`, `buddy.battery`
+  with typed results / unknown-action rejection.
+- **Background reply notifications** — replies notify only when no
+  activity is visible.
+- **Dashboard** — avatar stage, connection card, last-update caption,
+  error banner, battery, pairing shortcut card, reconnect / new session.
+- **Diagnostics (Settings)** — live state, paired, proto, server,
+  session, battery, last error; host/device-name/TTS/mic-rate settings
+  with validation; device-key reset & re-pair; tap-to-copy device ID.
+- **Share to Hermes** — Android share sheet target prefills the composer.
+- **Foreground service** — microphone type when the mic permission is
+  granted, `specialUse` fallback when denied (chat keeps working).
 
-## Build
+## Protocol
 
-Requirements: JDK 17, Android SDK (platform 36, build-tools).
+`hermes-gadget.v1` over WebSocket (`ws://host:8765/gadget` by default):
 
-```bash
-./gradlew assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
+- `hello` (proto, device_id, name, caps, actions, sensors) →
+  `challenge` → `auth` (enroll with `key`, or `mac` HMAC over
+  `hermes-gadget/v1|<device_id>|<nonce>`) → `welcome` (session, paired,
+  heartbeat_s) → optional `pairing` (code, command) → `paired`.
+- Text: `text` → `turn.start`, `reply.delta`, `reply`, `turn.end`.
+- Voice: `audio.start` + binary PCM frames → `audio.end`/`audio.cancel` →
+  `transcript` → reply turn; server audio arrives as `audio.start` +
+  binary frames + `audio.end`.
+- `prompt`/`prompt.reply`, `display`, `notice`, `status`, `cancel`,
+  `session.new`, `ping`/`pong`, `action`/`action.result`, `error`,
+  periodic `state` (battery_pct, charging).
+
+Device key lives in `EncryptedSharedPreferences`; device_id is
+`hg-` + first 16 hex of SHA-256(key).
+
+## Build & test
+
+```sh
+./gradlew assembleDebug          # APK in app/build/outputs/apk/debug/
+./gradlew testDebugUnitTest      # JVM unit tests (protocol + crypto)
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Pair
+Requirements: JDK 17, Android SDK with platform 36
+(`ANDROID_HOME` set), Gradle wrapper (jar + exec bit committed).
 
-1. Open the app, go to Settings, set the Hermes host URL if it isn't the
-   default, and go back — the service connects automatically.
-2. Open **Pair**. The app shows a pairing code and the approve command.
-3. On the Hermes host run the approve command (e.g.
-   `hermes gadget pair <code>` — use the exact command shown).
-4. The app flips to "Paired ✓" — chat and voice work immediately.
+Unit tests: `app/src/test/…` — 14 tests covering message parsing,
+builders, binary framing, and crypto vectors (generated independently).
 
-## Protocol version
+## Artwork
 
-Implements `hermes-gadget.v1`, `proto: 1`. Message types handled:
-`challenge`, `welcome`, `pairing`, `paired`, `unpaired`, `ping`,
-`turn.start`, `transcript`, `status`, `reply.delta`, `reply`, `turn.end`,
-`notice`, `prompt`, `prompt.close`, `display`, `audio.start`, `audio.end`,
-`audio.abort`, `action`, `error`. Sent: `hello`, `auth`, `pong`/`ping`,
-`text`, `audio.start`/`audio.end`/`audio.cancel`, `cancel`, `session.new`,
-`prompt.reply`, `action.result`, `state`.
+Launcher icon, avatar, and headers use the official **Nous Girl**
+artwork from [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+(`apps/desktop/assets/icon.png`, MIT licensed), © Nous Research.
 
-## What's stubbed / not yet built
+## What's stubbed
 
-- `image.start`/`image.end` (RGB565 display) — frames are ignored; no
-  `display` caps are advertised so the server shouldn't send them.
-- OTA firmware update flow (`ota.*`) — not advertised, not implemented.
-- `event` messages (device → server) — not sent.
-- `transcript` is shown as a system line; no separate STT UI.
-- Chat history is in-memory (last 100), not persisted.
-- No avatar/pixel-stage UI (MuseCompanionApp has one; not ported).
-
-## Project layout
-
-```
-app/src/main/java/com/duckets/hermesbuddy/
-├── Crypto.kt            # device key, device_id, HMAC auth
-├── DeviceStore.kt       # EncryptedSharedPreferences
-├── GadgetProtocol.kt    # message model + JSON builders + binary frames
-├── GadgetConnection.kt  # OkHttp WebSocket: handshake, pairing, heartbeat, reconnect
-├── GadgetService.kt     # foreground service: connection owner, actions, TTS, chat state
-├── AudioPlayer.kt       # AudioTrack playback + TtsSpeaker fallback
-├── MainActivity.kt      # dashboard
-├── ChatActivity.kt      # chat + hold-to-talk
-├── ChatAdapter.kt       # message list
-├── SettingsActivity.kt  # host URL, name, TTS, mic rate
-└── PairingActivity.kt   # pairing code display
-```
-
-## License
-
-Apache-2.0.
+- `image.start`/`image.end` parse but don't render (server only sends
+  images to devices advertising a display cap, which this app doesn't).
+- `prompt.close` TTL auto-dismiss isn't implemented (dialog stays until
+  answered/dismissed).
+- No OTA support (`update` tool targets firmware gadgets).

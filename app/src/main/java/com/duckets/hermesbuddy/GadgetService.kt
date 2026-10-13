@@ -56,6 +56,7 @@ class GadgetService : Service() {
     companion object {
         private const val TAG = "GadgetService"
         private const val NOTIF_ID = 1001
+        private const val NOTIF_CHAT_ID = 1002
         private const val CHANNEL_ID = "hermes_buddy"
         private const val ACTION_CHANNEL_ID = "hermes_buddy_actions"
     }
@@ -102,6 +103,15 @@ class GadgetService : Service() {
     private val _batteryPct = MutableStateFlow(-1)
     val batteryPctFlow: StateFlow<Int> = _batteryPct.asStateFlow()
 
+    private val _sessionId = MutableStateFlow<String?>(null)
+    val sessionId: StateFlow<String?> = _sessionId.asStateFlow()
+
+    private val _serverInfo = MutableStateFlow<String?>(null)
+    val serverInfo: StateFlow<String?> = _serverInfo.asStateFlow()
+
+    /** Texts queued while offline; flushed on the next CONNECTED. */
+    private val outbox = mutableListOf<String>()
+
     /** Turn ids for which the server sent an audio stream (so TTS stays quiet). */
     private val audioTurns = mutableSetOf<String>()
 
@@ -117,6 +127,8 @@ class GadgetService : Service() {
         tts = TtsSpeaker(this)
         createChannels()
         enterForeground()
+        _chat.value = ChatStore.loadChat(filesDir)
+        outbox.addAll(ChatStore.loadOutbox(filesDir))
 
         conn = GadgetConnection(store, connListener, ::sensorsJson, serviceScope)
         conn.start()
@@ -196,11 +208,51 @@ class GadgetService : Service() {
         if (clean.isEmpty()) return
         appendChat(ChatMessage(ChatMessage.Role.USER, clean))
         if (!conn.isSocketAlive()) {
-            appendChat(ChatMessage(ChatMessage.Role.SYSTEM, "Not connected — message not sent"))
+            outbox.add(clean)
+            persistOutbox()
+            appendChat(
+                ChatMessage(
+                    ChatMessage.Role.SYSTEM,
+                    "Offline — queued (sends on reconnect)"
+                )
+            )
             conn.reconnectNow()
             return
         }
         conn.sendTextMessage(clean)
+    }
+
+    /** Drop queued offline texts onto the fresh connection. */
+    private fun flushOutbox() {
+        if (outbox.isEmpty()) return
+        val pending = outbox.toList()
+        outbox.clear()
+        persistOutbox()
+        for (text in pending) conn.sendTextMessage(text)
+        appendChat(
+            ChatMessage(
+                ChatMessage.Role.SYSTEM,
+                "Sent ${pending.size} queued message${if (pending.size == 1) "" else "s"}"
+            )
+        )
+    }
+
+    fun clearChat() {
+        _chat.value = emptyList()
+        persistChat()
+    }
+
+    /**
+     * Forget the device key and re-enroll as a brand-new device on the next
+     * connection (the server will issue a fresh pairing code).
+     */
+    fun resetDeviceKey() {
+        store.resetKey()
+        _paired.value = false
+        _pairingCode.value = null
+        _pairingCommand.value = null
+        appendChat(ChatMessage(ChatMessage.Role.SYSTEM, "Device key reset — pair again as a new device"))
+        conn.reconnectNow()
     }
 
     fun sendCancel() = conn.sendCancel()
@@ -251,6 +303,16 @@ class GadgetService : Service() {
 
     private fun sensorsJson(): JSONObject = JSONObject().apply {
         put("battery_pct", batteryPct())
+        put("charging", isCharging())
+    }
+
+    private fun isCharging(): Boolean {
+        return try {
+            val bm = getSystemService(BatteryManager::class.java)
+            bm?.isCharging == true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     // ---- Connection listener ----
@@ -268,6 +330,7 @@ class GadgetService : Service() {
                         if (_paired.value) "Connected" else "Connected (unpaired)"
                 }
                 updateNotification(_caption.value)
+                if (s == GadgetConnection.ConnState.CONNECTED) flushOutbox()
             }
         }
 
@@ -298,7 +361,10 @@ class GadgetService : Service() {
             is InMsg.Welcome -> {
                 _paired.value = m.paired
                 store.paired = m.paired
-                if (!m.paired) _caption.value = "Connected — approve pairing on the Hermes host"
+                _sessionId.value = m.session.ifEmpty { null }
+                _serverInfo.value = m.server.ifEmpty { null }
+                _caption.value = if (m.paired) "Connected" else
+                    "Connected — approve pairing on the Hermes host"
             }
             is InMsg.Pairing -> {
                 _pairingCode.value = m.code
@@ -344,6 +410,9 @@ class GadgetService : Service() {
                     if (store.ttsEnabled && !audioTurns.contains(m.turn)) {
                         tts.speak(m.text)
                     }
+                    if (!AppVisibility.isForeground) {
+                        postChatNotification("Hermes", m.text)
+                    }
                 }
             }
             is InMsg.TurnEnd -> {
@@ -358,6 +427,11 @@ class GadgetService : Service() {
             is InMsg.Prompt -> {
                 _pendingPrompt.value = PendingPrompt(m.id, m.title, m.text)
                 appendChat(ChatMessage(ChatMessage.Role.SYSTEM, "${m.title}: ${m.text}"))
+                if (!AppVisibility.isForeground) {
+                    postChatNotification(
+                        m.title.ifEmpty { "Hermes needs an answer" }, m.text
+                    )
+                }
             }
             is InMsg.PromptClose -> {
                 if (_pendingPrompt.value?.id == m.id) _pendingPrompt.value = null
@@ -365,6 +439,9 @@ class GadgetService : Service() {
             is InMsg.Display -> {
                 val body = listOfNotNull(m.title, m.body).joinToString(" — ")
                 _caption.value = body.take(160)
+                if (body.isNotBlank()) {
+                    appendChat(ChatMessage(ChatMessage.Role.SYSTEM, body.take(500)))
+                }
             }
             is InMsg.AudioStart -> {
                 m.turn?.let { audioTurns.add(it) }
@@ -411,11 +488,23 @@ class GadgetService : Service() {
             cur.add(ChatMessage(ChatMessage.Role.ASSISTANT, text, turn = turn.ifEmpty { null }))
         }
         if (turn.isNotEmpty()) streamingTurn = turn
-        _chat.value = cur.takeLast(100)
+        _chat.value = cur.takeLast(ChatStore.MAX_MESSAGES)
+        persistChat()
     }
 
     private fun appendChat(msg: ChatMessage) {
-        _chat.value = (_chat.value + msg).takeLast(100)
+        _chat.value = (_chat.value + msg).takeLast(ChatStore.MAX_MESSAGES)
+        persistChat()
+    }
+
+    private fun persistChat() {
+        val snapshot = _chat.value
+        serviceScope.launch(Dispatchers.IO) { ChatStore.saveChat(filesDir, snapshot) }
+    }
+
+    private fun persistOutbox() {
+        val snapshot = outbox.toList()
+        serviceScope.launch(Dispatchers.IO) { ChatStore.saveOutbox(filesDir, snapshot) }
     }
 
     // ---- Device actions ----
@@ -494,6 +583,25 @@ class GadgetService : Service() {
             nm.notify(NOTIF_ID, buildNotification(text))
         } catch (_: Exception) {
         }
+    }
+
+    /** Reply/prompt notification shown only while the app is backgrounded. */
+    private fun postChatNotification(title: String, body: String) {
+        val nm = getSystemService(NotificationManager::class.java) ?: return
+        val intent = Intent(this, ChatActivity::class.java)
+        val pi = PendingIntent.getActivity(
+            this, 2, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val n = NotificationCompat.Builder(this, ACTION_CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(body.take(200))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body.take(1000)))
+            .setSmallIcon(R.drawable.ic_notif)
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(NOTIF_CHAT_ID, n)
     }
 
     private fun postActionNotification(title: String, body: String) {

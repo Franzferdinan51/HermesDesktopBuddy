@@ -4,8 +4,10 @@ import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -58,6 +60,8 @@ class GadgetConnection(
     @Volatile private var loopRunning = false
     /** Set once the server completes the handshake; gates the backoff reset. */
     @Volatile private var handshakeOk = false
+    /** Wakes the loop out of its backoff wait for an immediate reconnect. */
+    private val wakeup = Channel<Unit>(Channel.CONFLATED)
 
     @Volatile private var lastInboundMs = 0L
     @Volatile private var heartbeatS = 20
@@ -105,8 +109,14 @@ class GadgetConnection(
     }
 
     /** Drop the socket; the loop reconnects immediately. */
+    /**
+     * Drop the current socket and reconnect right away, interrupting any
+     * backoff wait. Without the wakeup the loop would sit out the delay
+     * (up to 60 s) before noticing.
+     */
     fun reconnectNow() {
         closeWs(1000, "manual reconnect")
+        wakeup.trySend(Unit)
     }
 
     private fun closeWs(code: Int, reason: String) {
@@ -133,7 +143,8 @@ class GadgetConnection(
             }
             if (wantStop) break
             setState(ConnState.DISCONNECTED)
-            delay(backoffMs)
+            // Backoff wait, interruptible by reconnectNow().
+            withTimeoutOrNull(backoffMs) { wakeup.receive() }
             backoffMs = minOf(backoffMs * 2, 60_000L)
         }
     }
@@ -258,7 +269,12 @@ class GadgetConnection(
                 handshakeOk = true
                 val paired = obj.optBoolean("paired")
                 setState(if (paired) ConnState.CONNECTED else ConnState.PAIRING)
-                dispatch(InMsg.Welcome(obj.optString("session"), paired, heartbeatS))
+                dispatch(
+                    InMsg.Welcome(
+                        obj.optString("session"), paired, heartbeatS,
+                        obj.optString("server", ""),
+                    )
+                )
             }
             "pairing" -> dispatch(InMsg.Pairing(obj.optString("code"), obj.optString("command")))
             "paired" -> {
