@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Glossy card: MuseBubble-style with gold-tinted shadow and top gloss -->
+<!-- Glossy card, MuseBubble recipe: navy gradient, white 0.22 border, top gloss.
+     Pair with android:elevation + outlineSpotShadowColor for the blue shadow. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- base gradient -->
     <item>
         <shape android:shape="rectangle">
             <corners android:radius="22dp" />
             <gradient
                 android:angle="315"
-                android:startColor="#2E2E4A"
-                android:centerColor="#23233A"
-                android:endColor="#1B1B2F"
+                android:startColor="@color/muse_card_top"
+                android:centerColor="@color/muse_card"
+                android:endColor="@color/muse_card_bottom"
                 android:type="linear" />
             <stroke
                 android:width="1dp"
                 android:color="#38FFFFFF" />
         </shape>
     </item>
-    <!-- top gloss band -->
     <item
         android:left="12dp"
         android:right="12dp"

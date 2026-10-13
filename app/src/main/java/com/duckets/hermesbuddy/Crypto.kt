@@ -1,12 +1,17 @@
 package com.duckets.hermesbuddy
 
-import android.util.Base64
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-/** Device identity + auth crypto for the hermes-gadget.v1 handshake. */
+/**
+ * Device identity + auth crypto for the hermes-gadget.v1 handshake.
+ *
+ * Uses java.util.Base64 (available on API 26+, this app's minSdk) so the
+ * object stays unit-testable on the JVM without Robolectric.
+ */
 object Crypto {
 
     /** 32 fresh random bytes — the device key. */
@@ -30,10 +35,10 @@ object Crypto {
     }
 
     fun b64encode(bytes: ByteArray): String =
-        Base64.encodeToString(bytes, Base64.NO_WRAP)
+        Base64.getEncoder().encodeToString(bytes)
 
     fun b64decode(s: String): ByteArray =
-        Base64.decode(s, Base64.DEFAULT)
+        Base64.getMimeDecoder().decode(s)
 
     private fun ByteArray.toHex(): String {
         val sb = StringBuilder(size * 2)

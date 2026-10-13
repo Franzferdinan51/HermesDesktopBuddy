@@ -34,6 +34,8 @@ class GadgetConnection(
         fun onConnState(s: ConnState)
         fun onMessage(m: InMsg)
         fun onAudioFrame(stream: Int, seq: Int, payload: ByteArray)
+        /** A connection attempt failed; shown to the user until the next state change. */
+        fun onConnError(hint: String)
     }
 
     enum class ConnState { DISCONNECTED, CONNECTING, HANDSHAKE, PAIRING, CONNECTED }
@@ -53,6 +55,9 @@ class GadgetConnection(
     @Volatile private var wantStop = false
     @Volatile private var state = ConnState.DISCONNECTED
         private set
+    @Volatile private var loopRunning = false
+    /** Set once the server completes the handshake; gates the backoff reset. */
+    @Volatile private var handshakeOk = false
 
     @Volatile private var lastInboundMs = 0L
     @Volatile private var heartbeatS = 20
@@ -74,11 +79,23 @@ class GadgetConnection(
 
     fun currentState(): ConnState = state
 
-    /** Start the connect loop (idempotent). */
+    /** Start the connect loop (idempotent: a second call while running is a no-op). */
+    @Synchronized
     fun start() {
-        if (wantStop) wantStop = false
-        scope.launch { connectLoop() }
+        wantStop = false
+        if (loopRunning) return
+        loopRunning = true
+        scope.launch {
+            try {
+                connectLoop()
+            } finally {
+                loopRunning = false
+            }
+        }
     }
+
+    /** True while a socket exists; outbound messages sent now can be delivered. */
+    fun isSocketAlive(): Boolean = ws != null
 
     /** Stop everything; no reconnect. */
     fun stop() {
@@ -103,17 +120,33 @@ class GadgetConnection(
     private suspend fun connectLoop() {
         var backoffMs = 1000L
         while (!wantStop) {
+            handshakeOk = false
             try {
                 setState(ConnState.CONNECTING)
                 doConnect() // returns when the socket dies
-                backoffMs = 1000L // clean close: reset backoff
+                // Only a completed handshake resets the backoff; a socket that
+                // dies before `welcome` keeps doubling up to the 60 s ceiling.
+                if (handshakeOk) backoffMs = 1000L
             } catch (e: Exception) {
                 Log.w(TAG, "connect failed", e)
+                reportError(e)
             }
             if (wantStop) break
             setState(ConnState.DISCONNECTED)
             delay(backoffMs)
             backoffMs = minOf(backoffMs * 2, 60_000L)
+        }
+    }
+
+    private fun reportError(e: Throwable) {
+        val hint = when (e) {
+            is IllegalArgumentException -> "Bad host URL: ${e.message}"
+            else -> e.message ?: e.javaClass.simpleName
+        }
+        try {
+            listener.onConnError(hint)
+        } catch (ex: Exception) {
+            Log.w(TAG, "listener.onConnError threw", ex)
         }
     }
 
@@ -172,6 +205,7 @@ class GadgetConnection(
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.w(TAG, "ws failure: ${t.message}")
+                if (!handshakeOk) reportError(t)
                 done.complete(Unit)
             }
         }
@@ -221,6 +255,7 @@ class GadgetConnection(
             }
             "welcome" -> {
                 heartbeatS = obj.optInt("heartbeat_s", 20).coerceAtLeast(5)
+                handshakeOk = true
                 val paired = obj.optBoolean("paired")
                 setState(if (paired) ConnState.CONNECTED else ConnState.PAIRING)
                 dispatch(InMsg.Welcome(obj.optString("session"), paired, heartbeatS))

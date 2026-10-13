@@ -1,20 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.HermesBuddy" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/hermes_gold</item>
-        <item name="colorOnPrimary">@color/hermes_ink</item>
-        <item name="colorPrimaryContainer">@color/hermes_gold_deep</item>
-        <item name="android:colorBackground">@color/hermes_ink</item>
-        <item name="colorSurface">@color/hermes_night</item>
+        <item name="colorPrimary">@color/muse_blue</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">@color/muse_card</item>
+        <item name="android:colorBackground">@color/muse_ink</item>
+        <item name="colorSurface">@color/muse_night</item>
         <item name="colorOnSurface">@color/hermes_text_primary</item>
         <item name="android:textColorPrimary">@color/hermes_text_primary</item>
         <item name="android:textColorSecondary">@color/hermes_text_secondary</item>
         <item name="android:windowBackground">@drawable/bg_app</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/muse_ink</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="alertDialogTheme">@style/HermesDialog</item>
     </style>
 
-    <style name="HermesGoldButton" parent="Widget.Material3.Button">
-        <item name="android:background">@drawable/btn_gold</item>
-        <item name="android:textColor">@color/hermes_ink</item>
+    <style name="HermesDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/muse_night</item>
+        <item name="colorOnSurface">@color/hermes_text_primary</item>
+        <item name="colorPrimary">@color/muse_blue_light</item>
+        <item name="alertDialogStyle">@style/HermesAlertDialog</item>
+    </style>
+
+    <style name="HermesAlertDialog" parent="MaterialAlertDialog.Material3">
+        <item name="shapeAppearance">@style/HermesDialogShape</item>
+    </style>
+
+    <style name="HermesDialogShape" parent="">
+        <item name="cornerSize">24dp</item>
+    </style>
+
+    <!-- backgroundTint must be null: Material3 tints android:background
+         with colorPrimary, which would flatten these glossy drawables. -->
+    <style name="HermesPrimaryButton" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/btn_primary</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@android:color/white</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">16sp</item>
         <item name="android:minHeight">52dp</item>
@@ -22,7 +44,8 @@
 
     <style name="HermesGhostButton" parent="Widget.Material3.Button">
         <item name="android:background">@drawable/btn_ghost</item>
-        <item name="android:textColor">@color/hermes_gold</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/muse_blue_light</item>
         <item name="android:textSize">14sp</item>
         <item name="android:minHeight">48dp</item>
     </style>
@@ -43,5 +66,20 @@
         <item name="android:textColor">@color/hermes_text_primary</item>
         <item name="android:textSize">16sp</item>
         <item name="android:lineSpacingExtra">4dp</item>
+    </style>
+
+    <style name="HermesSectionLabel">
+        <item name="android:textColor">@color/hermes_gold</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="HermesField" parent="">
+        <item name="android:background">@drawable/input_glossy</item>
+        <item name="android:textColor">@color/hermes_text_primary</item>
+        <item name="android:textColorHint">@color/hermes_text_muted</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:textSize">15sp</item>
     </style>
 </resources>

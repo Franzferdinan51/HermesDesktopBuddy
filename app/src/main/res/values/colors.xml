@@ -21,5 +21,25 @@
     <color name="hermes_offline">#6B7280</color>
     <color name="hermes_listening">#F5A623</color>
 
-    <color name="ic_launcher_background">#1B1B2F</color>
+    <!-- Muse companion system: Facebook blue bubbles + gloss on deep night -->
+    <color name="muse_blue">#1877F2</color>
+    <color name="muse_blue_light">#4B95F5</color>
+    <color name="muse_blue_deep">#0A3F86</color>
+    <color name="muse_blue_shadow">#471877F2</color>
+    <color name="muse_ink">#07101C</color>
+    <color name="muse_night">#0C1828</color>
+    <color name="muse_mist">#F4F8FF</color>
+    <color name="muse_card">#14305A</color>
+    <color name="muse_card_top">#3A5174</color>
+    <color name="muse_card_bottom">#123465</color>
+    <color name="muse_input">#13233C</color>
+    <color name="muse_banner">#7FB3FF</color>
+    <color name="muse_record">#D63A3A</color>
+    <color name="muse_record_top">#F26D6D</color>
+    <color name="muse_record_bottom">#A82828</color>
+    <color name="muse_error_bg">#3A1620</color>
+    <color name="muse_error_text">#FF9AA5</color>
+
+    <!-- White: seamless with the official Nous Girl plate under any mask -->
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

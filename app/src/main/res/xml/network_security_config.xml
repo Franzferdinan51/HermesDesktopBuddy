@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Hermes host URL is user-configured and typically a LAN / Tailscale
+     ws:// address with no TLS terminator, so cleartext WebSocket must be
+     allowed. The gadget protocol authenticates every connection (device key
+     + HMAC challenge) at the application layer. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

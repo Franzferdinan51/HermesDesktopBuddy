@@ -1,5 +1,6 @@
 package com.duckets.hermesbuddy
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,9 +8,8 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.media.AudioManager
 import android.os.BatteryManager
 import android.os.Binder
 import android.os.Build
@@ -18,6 +18,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,8 +30,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-/** One chat row. */
-data class ChatMessage(val role: Role, val text: String, val ts: Long = System.currentTimeMillis()) {
+/** One chat row. `turn` keys streamed assistant rows to their server turn. */
+data class ChatMessage(
+    val role: Role,
+    val text: String,
+    val ts: Long = System.currentTimeMillis(),
+    val turn: String? = null,
+) {
     enum class Role { USER, ASSISTANT, SYSTEM }
 }
 
@@ -93,6 +99,9 @@ class GadgetService : Service() {
     private val _lastError = MutableStateFlow<String?>(null)
     val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
+    private val _batteryPct = MutableStateFlow(-1)
+    val batteryPctFlow: StateFlow<Int> = _batteryPct.asStateFlow()
+
     /** Turn ids for which the server sent an audio stream (so TTS stays quiet). */
     private val audioTurns = mutableSetOf<String>()
 
@@ -107,20 +116,17 @@ class GadgetService : Service() {
         player = AudioPlayer()
         tts = TtsSpeaker(this)
         createChannels()
-        if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(NOTIF_ID, buildNotification("Connecting…"),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-        } else {
-            startForeground(NOTIF_ID, buildNotification("Connecting…"))
-        }
+        enterForeground()
 
         conn = GadgetConnection(store, connListener, ::sensorsJson, serviceScope)
         conn.start()
 
         // Telemetry: report sensors about once a minute.
+        _batteryPct.value = batteryPct()
         serviceScope.launch {
             while (true) {
                 delay(60_000)
+                _batteryPct.value = batteryPct()
                 if (conn.currentState() == GadgetConnection.ConnState.CONNECTED) {
                     conn.sendState()
                 }
@@ -130,8 +136,43 @@ class GadgetService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // The mic permission may have been granted since onCreate; re-enter the
+        // foreground with the best available type (no-op if already foreground).
+        enterForeground()
         return START_STICKY
     }
+
+    /**
+     * Enters the foreground with the microphone type when RECORD_AUDIO is
+     * granted, otherwise with the declared specialUse type. Starting a
+     * microphone-type FGS without the permission throws on Android 14+, and
+     * binding (BIND_AUTO_CREATE) creates the service even when the permission
+     * was denied — so this must never assume the permission is granted.
+     */
+    private fun enterForeground() {
+        if (Build.VERSION.SDK_INT < 29) {
+            startForeground(NOTIF_ID, buildNotification(_caption.value))
+            return
+        }
+        val type = if (hasMicPermission()) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        } else {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        }
+        try {
+            startForeground(NOTIF_ID, buildNotification(_caption.value), type)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "startForeground($type) denied, retrying as specialUse", e)
+            startForeground(
+                NOTIF_ID, buildNotification(_caption.value),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        }
+    }
+
+    private fun hasMicPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
 
     override fun onBind(intent: Intent?): IBinder = binder
 
@@ -147,16 +188,29 @@ class GadgetService : Service() {
 
     fun reconnect() = conn.reconnectNow()
 
+    /** True while an outbound message has a socket to travel on. */
+    fun isSocketAlive(): Boolean = conn.isSocketAlive()
+
     fun sendText(text: String) {
         val clean = text.trim()
         if (clean.isEmpty()) return
         appendChat(ChatMessage(ChatMessage.Role.USER, clean))
+        if (!conn.isSocketAlive()) {
+            appendChat(ChatMessage(ChatMessage.Role.SYSTEM, "Not connected — message not sent"))
+            conn.reconnectNow()
+            return
+        }
         conn.sendTextMessage(clean)
     }
 
     fun sendCancel() = conn.sendCancel()
 
     fun sendSessionNew() {
+        if (!conn.isSocketAlive()) {
+            appendChat(ChatMessage(ChatMessage.Role.SYSTEM, "Not connected — can't start a session"))
+            conn.reconnectNow()
+            return
+        }
         appendChat(ChatMessage(ChatMessage.Role.SYSTEM, "Started a new session"))
         conn.sendSessionNew()
     }
@@ -190,6 +244,11 @@ class GadgetService : Service() {
         }
     }
 
+    /** Refresh the published battery level (e.g. when the dashboard appears). */
+    fun refreshBattery() {
+        _batteryPct.value = batteryPct()
+    }
+
     private fun sensorsJson(): JSONObject = JSONObject().apply {
         put("battery_pct", batteryPct())
     }
@@ -218,6 +277,19 @@ class GadgetService : Service() {
 
         override fun onAudioFrame(stream: Int, seq: Int, payload: ByteArray) {
             player.write(stream, payload)
+        }
+
+        override fun onConnError(hint: String) {
+            serviceScope.launch {
+                _lastError.value = hint
+                // Only overwrite the caption while we're not usefully connected.
+                if (_connState.value != GadgetConnection.ConnState.CONNECTED &&
+                    _connState.value != GadgetConnection.ConnState.PAIRING
+                ) {
+                    _caption.value = hint.take(160)
+                    updateNotification(_caption.value)
+                }
+            }
         }
     }
 
@@ -320,16 +392,25 @@ class GadgetService : Service() {
         }
     }
 
-    /** Replace the in-progress assistant message for `turn`, or append a new one. */
+    /**
+     * Replace the in-progress assistant message for `turn`, or append a new
+     * one. Rows are keyed by turn: the first delta of a new turn must append,
+     * never overwrite the previous turn's reply. The timestamp is preserved
+     * on update so DiffUtil sees a content change, not a remove+insert.
+     */
     private fun upsertAssistant(turn: String, text: String) {
         val cur = _chat.value.toMutableList()
-        val idx = cur.indexOfLast { it.role == ChatMessage.Role.ASSISTANT }
-        val msg = ChatMessage(ChatMessage.Role.ASSISTANT, text)
-        if (idx >= 0 && streamingTurn == turn) {
-            cur[idx] = msg
+        val idx = if (turn.isEmpty()) {
+            -1
         } else {
-            cur.add(msg)
+            cur.indexOfLast { it.role == ChatMessage.Role.ASSISTANT && it.turn == turn }
         }
+        if (idx >= 0) {
+            cur[idx] = cur[idx].copy(text = text)
+        } else {
+            cur.add(ChatMessage(ChatMessage.Role.ASSISTANT, text, turn = turn.ifEmpty { null }))
+        }
+        if (turn.isNotEmpty()) streamingTurn = turn
         _chat.value = cur.takeLast(100)
     }
 
@@ -401,7 +482,7 @@ class GadgetService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Hermes Buddy")
             .setContentText(text)
-            .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+            .setSmallIcon(R.drawable.ic_notif)
             .setContentIntent(pi)
             .setOngoing(true)
             .build()
@@ -426,7 +507,7 @@ class GadgetService : Service() {
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setSmallIcon(R.drawable.ic_notif)
             .setContentIntent(pi)
             .setAutoCancel(true)
             .build()

@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Chat screen: Muse-style message list + glossy composer with hold-to-talk -->
+<!-- Chat screen: message list + glossy composer with hold-to-talk -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_app"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
 
     <!-- Header bar -->
     <LinearLayout
@@ -28,7 +30,7 @@
                 android:layout_height="34dp"
                 android:layout_gravity="center"
                 android:background="@drawable/avatar_bg"
-                android:src="@drawable/ic_hermes_mark"
+                android:src="@drawable/hermes_avatar"
                 android:contentDescription="Hermes" />
         </FrameLayout>
 
@@ -45,6 +47,7 @@
             android:id="@+id/chatStatusDot"
             android:layout_width="12dp"
             android:layout_height="12dp"
+            android:layout_marginEnd="4dp"
             android:background="@drawable/status_dot_offline" />
     </LinearLayout>
 
@@ -54,13 +57,52 @@
         android:background="#22FFFFFF" />
 
     <!-- Messages -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/messages"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:padding="12dp" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/messages"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="12dp" />
+
+        <LinearLayout
+            android:id="@+id/emptyView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:src="@drawable/hermes_avatar"
+                android:alpha="0.9"
+                android:contentDescription="Hermes" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="No messages yet"
+                android:textColor="@color/hermes_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Say hi to Hermes below"
+                android:textColor="@color/hermes_text_muted"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </FrameLayout>
 
     <!-- Activity banner (listening / typing) -->
     <TextView
@@ -69,7 +111,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:padding="6dp"
-        android:textColor="@color/hermes_gold"
+        android:textColor="@color/muse_banner"
         android:textSize="13sp"
         android:textStyle="italic"
         android:visibility="gone" />
@@ -79,6 +121,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/card_glossy"
+        android:elevation="8dp"
+        android:outlineSpotShadowColor="@color/muse_blue_shadow"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="10dp"
@@ -94,6 +138,7 @@
             android:textColor="@color/hermes_text_primary"
             android:textColorHint="@color/hermes_text_muted"
             android:inputType="text"
+            android:imeOptions="actionSend"
             android:maxLines="4"
             android:padding="12dp"
             android:textSize="15sp" />
@@ -103,7 +148,7 @@
             android:layout_width="44dp"
             android:layout_height="44dp"
             android:layout_marginStart="8dp"
-            android:background="@drawable/btn_gold"
+            android:background="@drawable/btn_primary"
             android:src="@drawable/ic_send"
             android:contentDescription="Send"
             android:padding="10dp" />
@@ -122,14 +167,15 @@
     <!-- Hold to talk -->
     <Button
         android:id="@+id/btnTalk"
-        style="@style/HermesGoldButton"
+        style="@style/HermesPrimaryButton"
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
         android:layout_marginBottom="12dp"
-        android:drawableStart="@drawable/ic_mic"
-        android:drawablePadding="10dp"
+        app:icon="@drawable/ic_mic"
+        app:iconPadding="10dp"
+        app:iconTint="@android:color/white"
         android:text="Hold to talk"
         android:textSize="15sp" />
 </LinearLayout>

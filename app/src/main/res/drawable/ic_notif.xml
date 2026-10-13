@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- White silhouette for status-bar notifications (bubble + wings outline). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineJoin="round"
+        android:pathData="M45,32 h18 a9,9 0 0 1 9,9 v14 a9,9 0 0 1 -9,9 H54 l-14,12 v-12 H45 a9,9 0 0 1 -9,-9 V41 a9,9 0 0 1 9,-9 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75,42 C86,38 94,32 98,24 C90,26 81,30 74,36 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75,54 C84,52 92,48 97,42 C90,43 82,46 75,50 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,42 C22,38 14,32 10,24 C18,26 27,30 34,36 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,54 C24,52 16,48 11,42 C18,43 26,46 33,50 Z" />
+</vector>

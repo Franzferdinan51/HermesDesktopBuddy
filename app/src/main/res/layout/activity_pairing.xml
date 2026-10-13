@@ -2,68 +2,214 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@drawable/bg_app"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <ImageView
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/hermes_avatar"
+            android:contentDescription="Hermes" />
 
         <TextView
+            style="@style/HermesTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="Pair with Hermes"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="12dp"
+            android:text="Pair with Hermes" />
 
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Not paired"
-            android:textSize="16sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="Pairing code"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/codeText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="—"
-            android:textSize="48sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Run this on the Hermes host to approve:"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/commandText"
+        <!-- Status card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:padding="12dp"
-            android:text="Connect to the Hermes host to receive a pairing code."
-            android:textIsSelectable="true"
-            android:textSize="14sp" />
+            android:layout_marginTop="20dp"
+            android:background="@drawable/card_glossy"
+            android:elevation="8dp"
+            android:outlineSpotShadowColor="@color/muse_blue_shadow"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <View
+                android:id="@+id/pairStatusDot"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:background="@drawable/status_dot_offline" />
+
+            <TextView
+                android:id="@+id/statusText"
+                style="@style/HermesBody"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="Not paired"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- How-it-works card: shown until a code arrives -->
+        <LinearLayout
+            android:id="@+id/howCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_glossy"
+            android:elevation="8dp"
+            android:outlineSpotShadowColor="@color/muse_blue_shadow"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HermesSectionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="How pairing works" />
+
+            <TextView
+                style="@style/HermesBody"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="1. This phone contacts your Hermes host\n2. The host shows a pairing code here\n3. Approve it on the host — no reconnect needed"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Done card: shown once paired -->
+        <LinearLayout
+            android:id="@+id/doneCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_glossy"
+            android:elevation="8dp"
+            android:outlineSpotShadowColor="@color/muse_blue_shadow"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Paired!"
+                android:textColor="@color/hermes_online"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                style="@style/HermesSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Chat and voice are ready." />
+
+            <Button
+                android:id="@+id/btnOpenChat"
+                style="@style/HermesPrimaryButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Open chat" />
+        </LinearLayout>
+
+        <!-- Code card -->
+        <LinearLayout
+            android:id="@+id/codeCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_glossy"
+            android:elevation="8dp"
+            android:outlineSpotShadowColor="@color/muse_blue_shadow"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HermesSectionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pairing code" />
+
+            <TextView
+                android:id="@+id/codeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:text="—"
+                android:textColor="@color/hermes_gold"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.15" />
+
+            <Button
+                android:id="@+id/btnCopyCode"
+                style="@style/HermesGhostButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:minWidth="140dp"
+                android:text="Copy code" />
+        </LinearLayout>
+
+        <!-- Command card -->
+        <LinearLayout
+            android:id="@+id/commandCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_glossy"
+            android:elevation="8dp"
+            android:outlineSpotShadowColor="@color/muse_blue_shadow"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HermesSectionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Run this on the Hermes host to approve" />
+
+            <TextView
+                android:id="@+id/commandText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/input_glossy"
+                android:padding="12dp"
+                android:text="Connect to the Hermes host to receive a pairing code."
+                android:textColor="@color/hermes_text_primary"
+                android:textIsSelectable="true"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnCopyCommand"
+                style="@style/HermesGhostButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:minWidth="180dp"
+                android:text="Copy command" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/btnRefresh"
+            style="@style/HermesPrimaryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="16dp"
             android:text="Reconnect" />
     </LinearLayout>
 </ScrollView>

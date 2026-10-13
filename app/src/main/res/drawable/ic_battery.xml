@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Battery outline for the dashboard header -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#B8B8CC"
+        android:strokeWidth="1.6"
+        android:pathData="M3,8 h15 a2,2 0 0 1 2,2 v4 a2,2 0 0 1 -2,2 H3 a2,2 0 0 1 -2,-2 v-4 a2,2 0 0 1 2,-2 z" />
+    <path
+        android:fillColor="#B8B8CC"
+        android:pathData="M21,10.5 h1.4 a1,1 0 0 1 1,1 v1 a1,1 0 0 1 -1,1 H21 Z" />
+    <path
+        android:fillColor="#4ADE80"
+        android:pathData="M3.5,9.5 h13 v5 h-13 Z" />
+</vector>

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -36,12 +35,13 @@ class MainActivity : AppCompatActivity() {
     private val audioPerm = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (granted) {
-            startGadgetService()
-        } else {
+        // The service runs with or without the mic (it picks the matching
+        // foreground-service type); voice input just needs the permission.
+        startGadgetService()
+        if (!granted) {
             android.widget.Toast.makeText(
                 this,
-                "Microphone permission is required for Hermes Buddy voice features.",
+                "Microphone denied: chat still works, hold-to-talk is disabled.",
                 android.widget.Toast.LENGTH_LONG
             ).show()
         }
@@ -75,14 +75,13 @@ class MainActivity : AppCompatActivity() {
             notifPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        // Keep the gadget link alive in a foreground service.
-        // The service runs as a microphone-type FGS (hold-to-talk), which on
-        // Android 14+ requires RECORD_AUDIO to be granted before startForeground.
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+        // Keep the gadget link alive in a foreground service. The service
+        // itself picks a microphone- or specialUse-type foreground entry
+        // depending on the mic permission, so it is always safe to start.
+        startGadgetService()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
             PackageManager.PERMISSION_GRANTED
         ) {
-            startGadgetService()
-        } else {
             audioPerm.launch(Manifest.permission.RECORD_AUDIO)
         }
 
@@ -97,6 +96,41 @@ class MainActivity : AppCompatActivity() {
         }
         b.btnReconnect.setOnClickListener { service?.reconnect() }
         b.btnNewSession.setOnClickListener { service?.sendSessionNew() }
+        b.pairCode.setOnClickListener {
+            val code = b.pairCode.text.toString()
+            if (code.isNotBlank() && code != "—") copyToClipboard("Pairing code", code)
+        }
+    }
+
+    private fun copyToClipboard(label: String, text: String) {
+        try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText(label, text))
+            android.widget.Toast.makeText(this, "Copied", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {
+        }
+    }
+
+    private var pulse: android.animation.ValueAnimator? = null
+
+    /** Gentle alpha pulse on the status dots while a connection is in flight. */
+    private fun pulseWhile(active: Boolean) {
+        pulse?.cancel()
+        pulse = null
+        b.statusDot.alpha = 1f
+        b.statusDotCard.alpha = 1f
+        if (!active) return
+        pulse = android.animation.ValueAnimator.ofFloat(0.35f, 1f).apply {
+            duration = 900
+            repeatMode = android.animation.ValueAnimator.REVERSE
+            repeatCount = android.animation.ValueAnimator.INFINITE
+            addUpdateListener {
+                val v = it.animatedValue as Float
+                b.statusDot.alpha = v
+                b.statusDotCard.alpha = v
+            }
+            start()
+        }
     }
 
     override fun onStart() {
@@ -117,6 +151,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeService() {
         val svc = service ?: return
+        svc.refreshBattery()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -128,14 +163,18 @@ class MainActivity : AppCompatActivity() {
                             GadgetConnection.ConnState.PAIRING -> "Waiting for pairing"
                             GadgetConnection.ConnState.CONNECTED -> "Connected"
                         }
-                        b.statusDot.setBackgroundResource(
-                            when (s) {
-                                GadgetConnection.ConnState.CONNECTED -> R.drawable.status_dot_online
-                                GadgetConnection.ConnState.PAIRING -> R.drawable.status_dot_pairing
-                                GadgetConnection.ConnState.CONNECTING,
-                                GadgetConnection.ConnState.HANDSHAKE -> R.drawable.status_dot_pairing
-                                GadgetConnection.ConnState.DISCONNECTED -> R.drawable.status_dot_offline
-                            }
+                        val dot = when (s) {
+                            GadgetConnection.ConnState.CONNECTED -> R.drawable.status_dot_online
+                            GadgetConnection.ConnState.PAIRING -> R.drawable.status_dot_pairing
+                            GadgetConnection.ConnState.CONNECTING,
+                            GadgetConnection.ConnState.HANDSHAKE -> R.drawable.status_dot_pairing
+                            GadgetConnection.ConnState.DISCONNECTED -> R.drawable.status_dot_offline
+                        }
+                        b.statusDot.setBackgroundResource(dot)
+                        b.statusDotCard.setBackgroundResource(dot)
+                        pulseWhile(
+                            s == GadgetConnection.ConnState.CONNECTING ||
+                                s == GadgetConnection.ConnState.HANDSHAKE
                         )
                     }
                 }
@@ -155,6 +194,21 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     svc.paired.collect { paired ->
                         b.pairedLabel.text = if (paired) "Paired ✓" else "Not paired"
+                    }
+                }
+                launch {
+                    svc.lastError.collect { err ->
+                        if (err != null) {
+                            b.errorBanner.text = err
+                            b.errorBanner.visibility = View.VISIBLE
+                        } else {
+                            b.errorBanner.visibility = View.GONE
+                        }
+                    }
+                }
+                launch {
+                    svc.batteryPctFlow.collect { pct ->
+                        b.batteryText.text = if (pct in 0..100) "$pct%" else "—"
                     }
                 }
             }

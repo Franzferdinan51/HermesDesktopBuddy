@@ -71,14 +71,24 @@ class ChatActivity : AppCompatActivity() {
         b.messages.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
         b.messages.adapter = adapter
 
-        b.btnSend.setOnClickListener {
-            val text = b.input.text.toString()
-            if (text.isNotBlank()) {
-                service?.sendText(text)
-                b.input.text.clear()
+        b.btnSend.setOnClickListener { sendInput() }
+        b.btnStop.setOnClickListener { service?.sendCancel() }
+        b.input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+                sendInput()
+                true
+            } else {
+                false
             }
         }
-        b.btnStop.setOnClickListener { service?.sendCancel() }
+        b.input.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+            override fun afterTextChanged(s: android.text.Editable?) {
+                b.btnSend.alpha = if (s.isNullOrBlank()) 0.45f else 1f
+            }
+        })
+        b.btnSend.alpha = 0.45f
 
         b.btnTalk.setOnTouchListener { _, event ->
             when (event.action) {
@@ -115,14 +125,32 @@ class ChatActivity : AppCompatActivity() {
         return true
     }
 
+    private fun sendInput() {
+        val text = b.input.text.toString()
+        if (text.isBlank()) return
+        b.btnTalk.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+        service?.sendText(text)
+        b.input.text.clear()
+    }
+
     private fun observeService() {
         val svc = service ?: return
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     svc.chat.collect { msgs ->
+                        b.emptyView.visibility =
+                            if (msgs.isEmpty()) android.view.View.VISIBLE
+                            else android.view.View.GONE
+                        // Only auto-scroll when the user is already at the
+                        // bottom, so reading history isn't yanked by deltas.
+                        val lm = b.messages.layoutManager as LinearLayoutManager
+                        val atBottom = adapter.itemCount == 0 ||
+                            lm.findLastVisibleItemPosition() >= adapter.itemCount - 2
                         adapter.submitList(msgs.toList()) {
-                            if (msgs.isNotEmpty()) b.messages.scrollToPosition(msgs.size - 1)
+                            if (msgs.isNotEmpty() && atBottom) {
+                                b.messages.scrollToPosition(msgs.size - 1)
+                            }
                         }
                     }
                 }
@@ -131,21 +159,50 @@ class ChatActivity : AppCompatActivity() {
                         if (prompt != null) showPromptDialog(prompt)
                     }
                 }
+                launch {
+                    svc.connState.collect { s ->
+                        b.chatStatusDot.setBackgroundResource(
+                            when (s) {
+                                GadgetConnection.ConnState.CONNECTED -> R.drawable.status_dot_online
+                                GadgetConnection.ConnState.DISCONNECTED -> R.drawable.status_dot_offline
+                                else -> R.drawable.status_dot_pairing
+                            }
+                        )
+                    }
+                }
+                launch {
+                    svc.caption.collect { caption ->
+                        // Surface "thinking / replying / speaking" as a banner;
+                        // idle captions stay out of the way.
+                        val busy = caption.contains("…") ||
+                            caption.startsWith("Speaking") ||
+                            caption.startsWith("Hermes is")
+                        if (busy && !recording) {
+                            b.activityBanner.text = caption
+                            b.activityBanner.visibility = android.view.View.VISIBLE
+                        } else if (!recording) {
+                            b.activityBanner.visibility = android.view.View.GONE
+                        }
+                    }
+                }
             }
         }
     }
 
     private var promptShownFor: String? = null
+    private var promptDialog: AlertDialog? = null
 
     private fun showPromptDialog(prompt: PendingPrompt) {
         if (promptShownFor == prompt.id) return
         promptShownFor = prompt.id
-        AlertDialog.Builder(this)
+        promptDialog?.dismiss()
+        promptDialog = AlertDialog.Builder(this)
             .setTitle(prompt.title.ifEmpty { "Hermes asks" })
             .setMessage(prompt.text)
             .setPositiveButton("Yes") { _, _ -> service?.answerPrompt(prompt.id, true) }
             .setNegativeButton("No") { _, _ -> service?.answerPrompt(prompt.id, false) }
             .setOnDismissListener {
+                promptDialog = null
                 if (service?.pendingPrompt?.value?.id == prompt.id) {
                     service?.dismissPrompt()
                 }
@@ -192,6 +249,11 @@ class ChatActivity : AppCompatActivity() {
             recorder?.startRecording()
             recording = true
             b.btnTalk.text = "Listening… release to send"
+            b.btnTalk.background =
+                androidx.core.content.ContextCompat.getDrawable(this, R.drawable.btn_record)
+            b.btnTalk.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+            b.activityBanner.text = "Listening…"
+            b.activityBanner.visibility = android.view.View.VISIBLE
             // 20 ms frames (640 bytes @ 16 kHz mono 16-bit)
             val frameBytes = (rate / 50) * 2
             recThread = thread(name = "mic-stream", isDaemon = true) {
@@ -212,24 +274,39 @@ class ChatActivity : AppCompatActivity() {
         if (!recording) return
         recording = false
         b.btnTalk.text = "Hold to talk"
-        try {
-            recThread?.join(1000)
-        } catch (_: Exception) {
-        }
-        recThread = null
-        try {
-            recorder?.stop()
-        } catch (_: Exception) {
-        }
-        recorder?.release()
-        recorder = null
+        b.btnTalk.background =
+            androidx.core.content.ContextCompat.getDrawable(this, R.drawable.btn_primary)
+        b.btnTalk.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+        b.activityBanner.visibility = android.view.View.GONE
+        // Tear down off the UI thread: AudioRecord.read() blocks, so joining
+        // the mic thread here would freeze the UI for up to a second.
+        val rec = recorder
+        val t = recThread
+        val id = uttId
+        val stream = uttStream
         val durationMs = SystemClock.elapsedRealtime() - uttStartMs
-        val svc = service
-        if (svc != null) {
-            if (durationMs < 250) {
-                svc.cancelUtterance(uttId, uttStream, "too short")
-            } else {
-                svc.endUtterance(uttId, uttStream, durationMs)
+        recorder = null
+        recThread = null
+        thread(name = "mic-stop", isDaemon = true) {
+            try {
+                rec?.stop()
+            } catch (_: Exception) {
+            }
+            try {
+                t?.join(2000)
+            } catch (_: Exception) {
+            }
+            try {
+                rec?.release()
+            } catch (_: Exception) {
+            }
+            val svc = service
+            if (svc != null) {
+                if (durationMs < 250) {
+                    svc.cancelUtterance(id, stream, "too short")
+                } else {
+                    svc.endUtterance(id, stream, durationMs)
+                }
             }
         }
     }

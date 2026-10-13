@@ -1,5 +1,7 @@
 package com.duckets.hermesbuddy
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -34,35 +36,22 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         title = "Settings"
 
-        b.btnSave.setOnClickListener {
-            val svc = service ?: return@setOnClickListener
-            svc.store.hostUrl = b.hostUrl.text.toString().trim().ifEmpty {
-                DeviceStore.DEFAULT_HOST_URL
-            }
-            svc.store.deviceName = b.deviceName.text.toString().trim().ifEmpty {
-                DeviceStore.DEFAULT_DEVICE_NAME
-            }
-            svc.store.ttsEnabled = b.ttsSwitch.isChecked
-            val rate = b.micRate.text.toString().toIntOrNull()
-            if (rate != null && rate in 8000..48000) {
-                svc.store.micRate = rate
-            }
-            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
-        }
-
+        b.btnSave.setOnClickListener { save() }
         b.btnReconnect.setOnClickListener {
-            service?.reconnect()
-            Toast.makeText(this, "Reconnecting…", Toast.LENGTH_SHORT).show()
+            if (save()) {
+                service?.reconnect()
+                Toast.makeText(this, "Reconnecting…", Toast.LENGTH_SHORT).show()
+            }
         }
 
         b.deviceIdRow.setOnClickListener {
-            // Show the derived device id for `hermes gadget forget` etc.
             val svc = service ?: return@setOnClickListener
-            android.app.AlertDialog.Builder(this)
-                .setTitle("Device ID")
-                .setMessage(svc.store.deviceId())
-                .setPositiveButton("OK", null)
-                .show()
+            try {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("Device ID", svc.store.deviceId()))
+                Toast.makeText(this, "Device ID copied", Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -83,6 +72,49 @@ class SettingsActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         finish()
         return true
+    }
+
+    /**
+     * Validates and saves every field. Returns false when a field is invalid
+     * (nothing is saved). Reconnects automatically when the host URL changed.
+     */
+    private fun save(): Boolean {
+        val svc = service ?: return false
+        val host = b.hostUrl.text.toString().trim()
+        if (host.isNotEmpty() && !isValidWsUrl(host)) {
+            b.hostUrl.error = "Use ws://host:port/path or wss://…"
+            Toast.makeText(this, "Invalid host URL", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        val rate = b.micRate.text.toString().trim().toIntOrNull()
+        if (b.micRate.text.toString().trim().isNotEmpty() && (rate == null || rate !in 8000..48000)) {
+            b.micRate.error = "8000 – 48000"
+            Toast.makeText(this, "Invalid mic rate (8000 – 48000 Hz)", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        val hostChanged = host.isNotEmpty() && host != svc.store.hostUrl
+        if (host.isNotEmpty()) svc.store.hostUrl = host
+        svc.store.deviceName = b.deviceName.text.toString().trim().ifEmpty {
+            DeviceStore.DEFAULT_DEVICE_NAME
+        }
+        svc.store.ttsEnabled = b.ttsSwitch.isChecked
+        if (rate != null) svc.store.micRate = rate
+        Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
+        if (hostChanged) {
+            svc.reconnect()
+            Toast.makeText(this, "Host changed — reconnecting…", Toast.LENGTH_SHORT).show()
+        }
+        return true
+    }
+
+    private fun isValidWsUrl(url: String): Boolean {
+        if (!url.startsWith("ws://") && !url.startsWith("wss://")) return false
+        return try {
+            val uri = android.net.Uri.parse(url)
+            !uri.host.isNullOrEmpty()
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun loadValues() {

@@ -1,38 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- User message bubble: dark indigo gradient, glossy -->
+<!-- User message bubble: Muse blue gradient, full 22dp radius -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <corners
-                android:topLeftRadius="18dp"
-                android:topRightRadius="18dp"
-                android:bottomLeftRadius="4dp"
-                android:bottomRightRadius="18dp" />
+            <corners android:radius="22dp" />
             <gradient
                 android:angle="315"
-                android:startColor="#2E2E4A"
-                android:centerColor="#23233A"
-                android:endColor="#1A1A2E"
+                android:startColor="@color/muse_blue_light"
+                android:centerColor="@color/muse_blue"
+                android:endColor="#1467D4"
                 android:type="linear" />
             <stroke
                 android:width="1dp"
-                android:color="#38FFFFFF" />
+                android:color="#57FFFFFF" />
         </shape>
     </item>
     <item
-        android:left="8dp"
-        android:right="8dp"
-        android:top="1dp"
+        android:left="10dp"
+        android:right="10dp"
+        android:top="2dp"
         android:bottom="100dp">
         <shape android:shape="rectangle">
-            <corners
-                android:topLeftRadius="14dp"
-                android:topRightRadius="14dp"
-                android:bottomLeftRadius="2dp"
-                android:bottomRightRadius="2dp" />
+            <corners android:radius="16dp" />
             <gradient
                 android:angle="90"
-                android:startColor="#30FFFFFF"
+                android:startColor="#4DFFFFFF"
                 android:endColor="#00FFFFFF"
                 android:type="linear" />
         </shape>
